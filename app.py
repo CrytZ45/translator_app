@@ -1,15 +1,12 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template
 import numpy as np
 import pickle
-from tensorflow.keras.models import load_model
+import tensorflow.lite as tflite
 import pyttsx3
 
 app = Flask(__name__)
 
-# Load models and tokenizers
-kamayo_to_eng_model = load_model("translator_model.h5")
-eng_to_kamayo_model = load_model("translator_model_reverse.h5")
-
+# Load Tokenizers
 with open("ka_tokenizer.pkl", "rb") as f:
     ka_tokenizer = pickle.load(f)
 with open("en_tokenizer.pkl", "rb") as f:
@@ -20,27 +17,29 @@ with open("ka_tokenizer_reversed.pkl", "rb") as f:
 with open("en_tokenizer_reversed.pkl", "rb") as f:
     en_tokenizer_reversed = pickle.load(f)
 
-max_len = 20
+# Load TFLite models
+def load_tflite_model(model_path):
+    interpreter = tflite.Interpreter(model_path=model_path)
+    interpreter.allocate_tensors()
+    return interpreter
 
-# Initialize Text-to-Speech
-engine = pyttsx3.init()
+kamayo_to_eng_model = load_tflite_model("translator_model.tflite")
+eng_to_kamayo_model = load_tflite_model("translator_model_reverse.tflite")
 
 # Translation Functions
-def translate_kamayo_to_english(text):
-    seq = ka_tokenizer.texts_to_sequences([text])
+def translate_with_tflite(interpreter, tokenizer_input, tokenizer_output, text, max_len=20):
+    seq = tokenizer_input.texts_to_sequences([text])
     seq_padded = np.zeros((1, max_len))
     seq_padded[0, :len(seq[0])] = seq[0]
-    prediction = kamayo_to_eng_model.predict(seq_padded)
-    predicted_seq = np.argmax(prediction, axis=-1)
-    return " ".join(en_tokenizer.index_word[i] for i in predicted_seq[0] if i > 0)
 
-def translate_english_to_kamayo(text):
-    seq = en_tokenizer_reversed.texts_to_sequences([text])
-    seq_padded = np.zeros((1, max_len))
-    seq_padded[0, :len(seq[0])] = seq[0]
-    prediction = eng_to_kamayo_model.predict(seq_padded)
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+    interpreter.set_tensor(input_details[0]['index'], seq_padded.astype(np.float32))
+    interpreter.invoke()
+    prediction = interpreter.get_tensor(output_details[0]['index'])
+
     predicted_seq = np.argmax(prediction, axis=-1)
-    return " ".join(ka_tokenizer_reversed.index_word[i] for i in predicted_seq[0] if i > 0)
+    return " ".join(tokenizer_output.index_word[i] for i in predicted_seq[0] if i > 0)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -48,16 +47,12 @@ def index():
         input_text = request.form.get("input_text")
         translation_direction = request.form.get("translation_direction")
 
-        translated_text = (
-            translate_kamayo_to_english(input_text)
-            if translation_direction == "kamayo_to_english"
-            else translate_english_to_kamayo(input_text)
-        )
+        if translation_direction == "kamayo_to_english":
+            translated_text = translate_with_tflite(kamayo_to_eng_model, ka_tokenizer, en_tokenizer, input_text)
+        else:
+            translated_text = translate_with_tflite(eng_to_kamayo_model, en_tokenizer_reversed, ka_tokenizer_reversed, input_text)
 
-        engine.save_to_file(translated_text, "static/output.mp3")
-        engine.runAndWait()
-
-        return render_template("index.html", input_text=input_text, translated_text=translated_text, audio_file="static/output.mp3")
+        return render_template("index.html", input_text=input_text, translated_text=translated_text)
 
     return render_template("index.html")
 
