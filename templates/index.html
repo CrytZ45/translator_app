@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kamayo ↔ English Translator</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Kamayo ↔ English Translator</h1>
+        <form method="POST">
+            <select name="translation_direction">
+                <option value="kamayo_to_english" {% if translation_direction == "kamayo_to_english" %}selected{% endif %}>Kamayo → English</option>
+                <option value="english_to_kamayo" {% if translation_direction == "english_to_kamayo" %}selected{% endif %}>English → Kamayo</option>
+            </select>
+            <textarea name="input_text" placeholder="Enter text here..." required>{{ input_text }}</textarea>
+            <button type="submit">Translate</button>
+        </form>
+        {% if translated_text %}
+        <div class="result">
+            <h2>Translation:</h2>
+            <p>{{ translated_text }}</p>
+            <audio controls>
+                <source src="{{ audio_file }}" type="audio/mpeg">
+                Your browser does not support audio playback.
+            </audio>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
