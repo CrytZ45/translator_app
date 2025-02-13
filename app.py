@@ -1,9 +1,11 @@
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # Suppress TensorFlow logs
+
 from flask import Flask, request, render_template
 import numpy as np
 import pickle
 import tensorflow.lite as tflite
 from gtts import gTTS
-import os
 
 app = Flask(__name__)
 
@@ -27,7 +29,7 @@ def load_tflite_model(model_path):
 kamayo_to_eng_model = load_tflite_model("translator_model.tflite")
 eng_to_kamayo_model = load_tflite_model("translator_model_reverse.tflite")
 
-# Translation Functions
+# Translation Function
 def translate_with_tflite(interpreter, tokenizer_input, tokenizer_output, text, max_len=20):
     seq = tokenizer_input.texts_to_sequences([text])
     seq_padded = np.zeros((1, max_len))
@@ -42,7 +44,7 @@ def translate_with_tflite(interpreter, tokenizer_input, tokenizer_output, text, 
     predicted_seq = np.argmax(prediction, axis=-1)
     return " ".join(tokenizer_output.index_word[i] for i in predicted_seq[0] if i > 0)
 
-# Replace pyttsx3 with gTTS
+# Convert text to speech (using gTTS)
 def save_audio(text):
     tts = gTTS(text=text, lang="en")
     tts.save("static/output.mp3")
@@ -65,4 +67,4 @@ def index():
     return render_template("index.html")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=10000)
