@@ -1,28 +1,37 @@
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # Suppress TensorFlow logs
-
-from flask import Flask, request, render_template
-import numpy as np
 import pickle
+import numpy as np
 import tensorflow.lite as tflite
+from flask import Flask, request, render_template
 from gtts import gTTS
 
 app = Flask(__name__)
 
+# Ensure the models folder exists
+MODEL_DIR = os.path.join(os.getcwd(), "models")
+if not os.path.exists(MODEL_DIR):
+    os.makedirs(MODEL_DIR)
+
+# Load Pickle Files Safely
+def load_pickle(file_name):
+    file_path = os.path.join(MODEL_DIR, file_name)
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Missing file: {file_path}")
+    with open(file_path, "rb") as f:
+        return pickle.load(f)
+
 # Load Tokenizers
-with open("ka_tokenizer.pkl", "rb") as f:
-    ka_tokenizer = pickle.load(f)
-with open("en_tokenizer.pkl", "rb") as f:
-    en_tokenizer = pickle.load(f)
+ka_tokenizer = load_pickle("ka_tokenizer.pkl")
+en_tokenizer = load_pickle("en_tokenizer.pkl")
+ka_tokenizer_reversed = load_pickle("ka_tokenizer_reversed.pkl")
+en_tokenizer_reversed = load_pickle("en_tokenizer_reversed.pkl")
 
-with open("ka_tokenizer_reversed.pkl", "rb") as f:
-    ka_tokenizer_reversed = pickle.load(f)
-with open("en_tokenizer_reversed.pkl", "rb") as f:
-    en_tokenizer_reversed = pickle.load(f)
-
-# Load TFLite models
-def load_tflite_model(model_path):
-    interpreter = tflite.Interpreter(model_path=model_path)
+# Load TFLite Models
+def load_tflite_model(file_name):
+    file_path = os.path.join(MODEL_DIR, file_name)
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Missing TFLite model: {file_path}")
+    interpreter = tflite.Interpreter(model_path=file_path)
     interpreter.allocate_tensors()
     return interpreter
 
@@ -44,10 +53,11 @@ def translate_with_tflite(interpreter, tokenizer_input, tokenizer_output, text, 
     predicted_seq = np.argmax(prediction, axis=-1)
     return " ".join(tokenizer_output.index_word[i] for i in predicted_seq[0] if i > 0)
 
-# Convert text to speech (using gTTS)
+# Convert Text to Speech
 def save_audio(text):
     tts = gTTS(text=text, lang="en")
-    tts.save("static/output.mp3")
+    audio_path = os.path.join("static", "output.mp3")
+    tts.save(audio_path)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
