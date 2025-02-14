@@ -22,7 +22,7 @@ def load_pickle(file_name):
 # Load Tokenizers
 ka_tokenizer = load_pickle("ka_tokenizer.pkl")
 en_tokenizer = load_pickle("en_tokenizer.pkl")
-ka_tokenizer_reversed = load_pickle("ka_tokenizer_reversed.h5")
+ka_tokenizer_reversed = load_pickle("ka_tokenizer_reversed.pkl")
 en_tokenizer_reversed = load_pickle("en_tokenizer_reversed.pkl")
 
 # Load Translation Models from Pickle Files
