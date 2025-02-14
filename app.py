@@ -1,8 +1,9 @@
 import os
-import pickle
 import numpy as np
+import pickle
 from flask import Flask, request, render_template
 from gtts import gTTS
+from tensorflow.keras.models import load_model
 
 app = Flask(__name__)
 
@@ -11,7 +12,7 @@ MODEL_DIR = os.path.join(os.getcwd(), "models")
 if not os.path.exists(MODEL_DIR):
     os.makedirs(MODEL_DIR)
 
-# Load Pickle Files Safely
+# Load Pickle Tokenizers
 def load_pickle(file_name):
     file_path = os.path.join(MODEL_DIR, file_name)
     if not os.path.exists(file_path):
@@ -25,9 +26,9 @@ en_tokenizer = load_pickle("en_tokenizer.pkl")
 ka_tokenizer_reversed = load_pickle("ka_tokenizer_reversed.pkl")
 en_tokenizer_reversed = load_pickle("en_tokenizer_reversed.pkl")
 
-# Load Translation Models from Pickle Files
-kamayo_to_eng_model = load_pickle("translator_model.h5")  # Kamayo → English
-eng_to_kamayo_model = load_pickle("translator_model_reverse.h5")  # English → Kamayo
+# Load `.h5` Translation Models
+kamayo_to_eng_model = load_model(os.path.join(MODEL_DIR, "translator_model.h5"))  # Kamayo → English
+eng_to_kamayo_model = load_model(os.path.join(MODEL_DIR, "translator_model_reverse.h5"))  # English → Kamayo
 
 # Translation Function
 def translate_with_model(model, tokenizer_input, tokenizer_output, text, max_len=20):
