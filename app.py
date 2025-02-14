@@ -22,12 +22,12 @@ def load_pickle(file_name):
 # Load Tokenizers
 ka_tokenizer = load_pickle("ka_tokenizer.pkl")
 en_tokenizer = load_pickle("en_tokenizer.pkl")
-ka_tokenizer_reversed = load_pickle("ka_tokenizer_reversed.pkl")
+ka_tokenizer_reversed = load_pickle("ka_tokenizer_reversed.h5")
 en_tokenizer_reversed = load_pickle("en_tokenizer_reversed.pkl")
 
 # Load Translation Models from Pickle Files
-kamayo_to_eng_model = load_pickle("translator_model.pkl")  # Kamayo → English
-eng_to_kamayo_model = load_pickle("translator_model_reverse.pkl")  # English → Kamayo
+kamayo_to_eng_model = load_pickle("translator_model.h5")  # Kamayo → English
+eng_to_kamayo_model = load_pickle("translator_model_reverse.h5")  # English → Kamayo
 
 # Translation Function
 def translate_with_model(model, tokenizer_input, tokenizer_output, text, max_len=20):
