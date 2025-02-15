@@ -3,9 +3,23 @@ import numpy as np
 import pickle
 from flask import Flask, request, render_template
 from gtts import gTTS
+
+# ✅ Limit TensorFlow memory usage to prevent crashes
+import tensorflow as tf
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # Suppress TensorFlow logs
+
+# Allow TensorFlow to use only needed memory
+physical_devices = tf.config.list_physical_devices('CPU')  # Use CPU to reduce memory
+if physical_devices:
+    try:
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    except:
+        pass
+
 from tensorflow.keras.models import load_model
 
 app = Flask(__name__)
+
 
 # Ensure the models folder exists
 MODEL_DIR = os.path.join(os.getcwd(), "models")
